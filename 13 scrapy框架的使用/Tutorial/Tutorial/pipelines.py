@@ -9,7 +9,10 @@
 # class TutorialPipeline(object):
 #     def process_item(self, item, spider):
 #         return item
+import pymongo
 from scrapy.exceptions import DropItem
+
+from . import settings
 
 
 class TextPipeline(object):
@@ -17,18 +20,27 @@ class TextPipeline(object):
         self.limit = 50
 
     def process_item(self, item, spider):
-        # 删掉 text 中长度超过50个的item
-        if item['text'] and len(item['text']) > self.limit:
-            item['text'] = item['text'][:self.limit].rstrip() + '...'
+        if item['text']:
+            if len(item['text']) > self.limit:
+                item['text'] = item['text'][0:self.limit].rstrip() + '...'
             return item
         else:
-            return DropItem('Text 丢失')
+            return DropItem('Missing Text')
 
 
-class MongoPipeLine(object):
-    def __init__(self, mongo_uri, mongo_db):
-        self.mongo_uri = mongo_uri
-        self.mongo_db = mongo_db
+class MongoPipeline(object):
+    def __init__(self):
+        host = settings.MONGODB_HOST
+        port = settings.MONGODB_PORT
 
-    # @classmethod
-    # def pass
+        conn = pymongo.MongoClient(host=host, port=port)
+        self.db = conn.教程
+        self.myset = self.db.教程内容
+
+    def process_item(self, item, spider):
+        # item转化为自带呢
+        self.myset.insert(dict(item))
+        print('存入数据库成功')
+
+    def close_spider(self, spider):
+        self.db.close()
